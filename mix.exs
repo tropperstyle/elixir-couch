@@ -31,8 +31,7 @@ defmodule Couch.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:httpoison, "~> 0.8.0"},
-      {:poison, "~> 1.5"},
+      {:httpoison, "~> 0.11.1"},
       {:barrel_oauth, "~> 1.6", hex: :barrel_oauth, app: false}
     ]
   end
