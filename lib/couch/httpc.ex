@@ -47,11 +47,9 @@ defmodule Couch.Httpc do
   end
   def db_resp({:ok, resp}, expect) do
     case resp.status_code do
-      401 -> {:error, :unauthenticated}
-      403 -> {:error, :forbidden}
-      404 -> {:error, :not_found}
-      409 -> {:error, :conflict}
-      412 -> {:error, :precondition_failed}
+      error_code when error_code in [401, 403, 404, 409, 412] ->
+        {:ok, %{:error=>error,:reason=>reason}} = json_body(resp, keys: :atoms)
+        {:error, {String.to_atom(error), reason}}
       _ -> 
         case Enum.member?(expect, resp.status_code) do
           true -> {:ok, resp}
