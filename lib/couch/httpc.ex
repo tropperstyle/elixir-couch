@@ -47,7 +47,7 @@ defmodule Couch.Httpc do
     resp
   end
 
-  def db_resp({:ok, %{body: ""}}, expect) do
+  def db_resp({:ok, resp = %{body: ""}}, expect) do
     case resp.status_code do
       401 -> {:error, :unauthenticated}
       403 -> {:error, :forbidden}
