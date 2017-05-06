@@ -37,6 +37,7 @@ defmodule Couch.Httpc do
   def db_request(method, url, headers, body, options) do
     db_request(method, url, headers, body, options, [])
   end
+
   def db_request(method, url, headers, body, options, expect) do
     resp = request(method, url, headers, body, options)
     db_resp(resp, expect)
@@ -45,37 +46,38 @@ defmodule Couch.Httpc do
   def db_resp(resp, []) do
     resp
   end
-  def db_resp({:ok, resp}, expect) do
-    if resp == "" do
-      case resp.status_code do
-        401 -> {:error, :unauthenticated}
-        403 -> {:error, :forbidden}
-        404 -> {:error, :not_found}
-        409 -> {:error, :conflict}
-        412 -> {:error, :precondition_failed}
-        _ ->
+
+  def db_resp({:ok, %{body: ""}}, expect) do
+    case resp.status_code do
+      401 -> {:error, :unauthenticated}
+      403 -> {:error, :forbidden}
+      404 -> {:error, :not_found}
+      409 -> {:error, :conflict}
+      412 -> {:error, :precondition_failed}
+      _ ->
         case Enum.member?(expect, resp.status_code) do
-          true -> {:ok, resp}
-          false -> {:error, {:bad_response, {resp.status_code, resp.headers, ""}}}
+        true -> {:ok, resp}
+        false -> {:error, {:bad_response, {resp.status_code, resp.headers, ""}}}
         end
-      end
-    else
-      case resp.status_code do
-        error_code when error_code in [401, 403, 404, 409, 412] ->
-          {:ok, %{:error=>error,:reason=>reason}} = json_body(resp, keys: :atoms)
-          {:error, {String.to_atom(error), reason}}
-        _ ->
-        case Enum.member?(expect, resp.status_code) do
-          true -> {:ok, resp}
-          false -> {:error, {:bad_response, {resp.status_code, resp.headers, ""}}}
-        end
-      end
     end
   end
+
+  def db_resp({:ok, resp}, expect) do
+    case resp.status_code do
+      error_code when error_code in [401, 403, 404, 409, 412] ->
+        {:ok, %{:error=>error,:reason=>reason}} = json_body(resp, keys: :atoms)
+        {:error, {String.to_atom(error), reason}}
+      _ ->
+        case Enum.member?(expect, resp.status_code) do
+        true -> {:ok, resp}
+        false -> {:error, {:bad_response, {resp.status_code, resp.headers, ""}}}
+        end
+    end
+  end
+
   def db_resp({:error, error}, _expect) do
     {:error, error.reason}
   end
-
 
   def make_headers(method, url, headers, options) do
     new_headers = case Couch.Util.get_value("Accept", headers) do
